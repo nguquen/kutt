@@ -7,17 +7,20 @@ const redis = {
   port: env.REDIS_PORT,
   host: env.REDIS_HOST,
   db: env.REDIS_DB,
-  ...(env.REDIS_PASSWORD && { password: env.REDIS_PASSWORD })
+  ...(env.REDIS_PASSWORD && { password: env.REDIS_PASSWORD }),
 };
 
 let visit;
 
 if (env.REDIS_ENABLED) {
-  visit = new Queue("visit", { redis });
+  visit = new Queue("visit", {
+    redis,
+    prefix: `{${env.SITE_NAME.toLowerCase()}}`,
+  });
   visit.clean(5000, "completed");
   visit.process(6, path.resolve(__dirname, "visit.js"));
-  visit.on("completed", job => job.remove());
-  
+  visit.on("completed", (job) => job.remove());
+
   // TODO: handler error
   // visit.on("error", function (error) {
   //   console.log("error");
@@ -26,15 +29,13 @@ if (env.REDIS_ENABLED) {
   const visitProcessor = require(path.resolve(__dirname, "visit.js"));
   visit = {
     add(data) {
-      visitProcessor({ data }).catch(function(error) {
+      visitProcessor({ data }).catch(function (error) {
         console.error("Add visit error: ", error);
       });
-    }
-  }
+    },
+  };
 }
 
-
-
-module.exports = { 
+module.exports = {
   visit,
-}
+};
